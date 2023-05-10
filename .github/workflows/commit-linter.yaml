@@ -1,0 +1,16 @@
+name: Commit Linter
+on:
+  push:
+
+jobs:
+  commit-linter:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # The max-depth at 0 forces to only check the last commit
+      - name: Run lint on commit(s)
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.js
+          helpURL: https://github.com/croesusfin/tech-docs/blob/main/Semantic%20Release/CONTRIBUTING.md

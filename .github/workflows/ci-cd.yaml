@@ -1,0 +1,83 @@
+name: Continuous Integration
+on:
+  push:
+    paths-ignore:
+      - '.gitattributes'
+      - '.gitignore'
+      - 'README*.md'
+  workflow_dispatch:
+
+jobs:
+  pre_ci:
+    name: Pre CI
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Get commit message
+        id: push_commit_message
+        run: |
+          echo 'commit_message<<END_OF_COMMIT_MESSAGE_${{ github.sha }}' >> $GITHUB_OUTPUT
+          echo "$(git log --format=%B -n 1 HEAD)" >> $GITHUB_OUTPUT
+          echo 'END_OF_COMMIT_MESSAGE_${{ github.sha }}' >> $GITHUB_OUTPUT
+
+    outputs:
+      # Run CI only if NOT triggered from the main branch (assuming branch policy on main branch validated the PR) AND "[skip-ci]" is present in the commit message AND if the commit isn't a "release:"
+      runCI: ${{ github.ref != 'refs/heads/main' && contains(steps.push_commit_message.outputs.commit_message, '[skip-ci]') == false && startsWith(steps.push_commit_message.outputs.commit_message, 'release:') == false }}
+      # Run CD only if branch is main OR if "[run-cd]"" is present in the commit message and if the commit isn't a "release:"
+      runCD: ${{ (github.ref == 'refs/heads/main' || contains(steps.push_commit_message.outputs.commit_message, '[run-cd]') == true || github.event_name == 'workflow_dispatch') && startsWith(steps.push_commit_message.outputs.commit_message, 'release:') == false }}
+
+  ci:
+    name: CI
+    runs-on: ubuntu-22.04
+    needs: [ pre_ci ]
+    if: ${{ needs.pre_ci.outputs.runCI == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # TODO Compile the Go binary
+
+  cd:
+    name: CD
+    runs-on: ubuntu-22.04
+    needs: [ pre_ci, ci ]
+    # In order to run the CD even when the CI is skipped we must also add the `always()`
+    if: ${{ always() && needs.pre_ci.outputs.runCD == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node (for semantic release)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Node dependencies (for semantic release)
+        run: npm i
+
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: npx semantic-release
+
+        # TODO Compile the Go and upload to release asset
+
+      - name: Upload the dmbs_exporter package to release Assets
+        uses: softprops/action-gh-release@v1
+        if: ${{ env.RELEASED_VERSION != '' }}
+        with:
+          tag_name: v${{ env.RELEASED_VERSION }}
+          files: dbms_exporter-${{ env.RELEASED_VERSION }}.linux-amd64.tar.gz
