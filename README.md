@@ -19,7 +19,7 @@ install some extra dependencies, see [Building](#Building) below for details.
 
 ```
 # Build the dbms_exporter binary and the ncabatoff/dbms_exporter docker image
-make docker-build
+make build-with-docker
 
 # Start an example database
 docker run --net=host -it --rm -e POSTGRES_PASSWORD=password postgres
@@ -272,7 +272,7 @@ from source unless your distro has a >=1.0 version.
 
 Alternatively, if you have docker installed, you can do this by running:
 ```
-make docker-build
+make build-with-docker
 ```
 
 This will build and run a docker image to build FreeTDS and then dbms_exporter,
