@@ -8,7 +8,7 @@ BUILD_CONTAINER_NAME = ncabatoff/dbms_exporter_builder:${FREETDS_VERSION}
 TAG_VERSION ?= $(shell git describe --tags --abbrev=0)
 
 # Possible BUILDTAGS settings are postgres, freetds, and odbc.
-DRIVERS = postgres freetds
+DRIVERS = freetds
 # Use make LDFLAGS= if you want to build with tag ODBC.
 LDFLAGS = -extldflags=-static
 
@@ -35,9 +35,25 @@ docker-build-pre: Dockerfile-buildexporter
 
 # Do a self-contained build of dbms_exporter using Docker.
 build-with-docker: $(GO_SRC) docker-build-pre Dockerfile
+	rm -f dbms_exporter
 	docker run --rm -v $(shell pwd):/work \
 	    -w /work \
 	    $(BUILD_CONTAINER_NAME) \
 	    make DRIVERS="$(DRIVERS)" LDFLAGS="$(LDFLAGS)"
 
 .PHONY: docker-build docker test vet
+
+
+SYBASE_USER=
+SYBASE_PASSWD=
+SYBASE_SERVER=
+
+build: build-with-docker docker
+largetest:
+	@echo Point your browser at http://localhost:9113/metrics
+	docker run --rm -ti -e DATA_SOURCE_NAME='compatibility_mode=sybase;user=$(SYBASE_USER);pwd=$(SYBASE_PASSWD);server=$(SYBASE_SERVER)' -p 9113:9113 -v`pwd`:/etc ncabatoff/dbms_exporter -queryfile /etc/sybase.yaml -driver sybase
+
+shell:
+	docker run --rm -ti -e DATA_SOURCE_NAME='compatibility_mode=sybase;user=$(SYBASE_USER);pwd=$(SYBASE_PASSWD);server=$(SYBASE_SERVER)' -v`pwd`:/etc --entrypoint /bin/bash ncabatoff/dbms_exporter 
+
+	

@@ -3,6 +3,6 @@ ARG FREETDS_VERSION=1.1.5
 RUN wget ftp://ftp.freetds.org/pub/freetds/stable/freetds-$FREETDS_VERSION.tar.gz
 RUN tar zxf freetds-${FREETDS_VERSION}.tar.gz
 WORKDIR freetds-${FREETDS_VERSION}
-RUN ./configure
+# Disable iconv to get a portable binary
+RUN ./configure --disable-libiconv
 RUN make install
-RUN apt-get update && apt-get -y install unixodbc-dev
