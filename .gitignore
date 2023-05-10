@@ -3,6 +3,13 @@ dbms_exporter
 *.tar.gz
 *.test
 *-stamp
-.idea
 *.iml
 .*.sw?
+
+# IDE Folders
+.fleet/
+.idea/
+.vs/
+
+# Node (Semantic Release)
+node_modules/

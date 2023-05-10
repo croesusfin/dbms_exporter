@@ -1,0 +1,61 @@
+name: PR Validator
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+jobs:
+  pr-validator:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # Get the amount of commits in this PR (compared to main) that AREN't releases/pre-releases
+      - name: Get latest commit summary
+        id: commits-count
+        run: |
+          echo "val=$(git rev-list --count origin/main.. --grep='^release:.*$' --invert-grep --)" >> $GITHUB_OUTPUT
+      - name: Make sure there is only 1 commit in your PR
+        # Since this is running in the pull_request event, a merge is in process, so there should only be 2 commits
+        if: steps.commits-count.outputs.val != '2'
+        run: |
+          echo "There can only be one commit in a PR. See doc in https://github.com/croesusfin/tech-docs/blob/main/Semantic%20Release/PULL_REQUESTS.md for more info."
+          exit 1
+      - name: Get latest commit summary
+        id: latest-commit
+        run: |
+          echo 'msg-header<<END_OF_MESSAGE_HEADER_${{ github.sha }}' >> $GITHUB_OUTPUT
+          echo "$(git log --format=%s --grep='^release:.*$' --invert-grep -n 1 HEAD^2)" >> $GITHUB_OUTPUT
+          echo 'END_OF_MESSAGE_HEADER_${{ github.sha }}' >> $GITHUB_OUTPUT
+      - name: Check if JIRA feature branch
+        run: |
+          if [[ ${{ github.head_ref }} =~ ^feature\/[a-zA-Z]+-[0-9]+$ ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+          fi
+        id: check-if-jira
+      - name: Update the PR header + body (if feature branch)
+        uses: croesusfin/pr-update-action@v2
+        if: steps.check-if-jira.outputs.result == 'true'
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          base-branch-regex: '[a-z\d-_.\\/]+'
+          head-branch-regex: '[a-zA-Z]+-\d+'
+          title-template: '${{ steps.latest-commit.outputs.msg-header }}'
+          title-update-action: 'replace'
+          body-template: |
+            [Link to %headbranch%](https://croesus-support.atlassian.net/browse/%headbranch%)
+          body-update-action: 'suffix'
+          body-uppercase-base-match: false
+      - name: Update the PR header + body (if non-feature branch)
+        uses: croesusfin/pr-update-action@v2
+        if: steps.check-if-jira.outputs.result != 'true'
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          base-branch-regex: '.*'
+          head-branch-regex: '.*'
+          title-template: '${{ steps.latest-commit.outputs.msg-header }}'
+          title-update-action: 'replace'
