@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: Build & Release
 on:
   push:
     paths-ignore:
@@ -42,7 +42,9 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      # TODO Compile the Go binary
+      - name: Build using Docker
+        run: |
+          make build-with-docker
 
   cd:
     name: CD
@@ -73,7 +75,14 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
         run: npx semantic-release
 
-        # TODO Compile the Go and upload to release asset
+      - name: Build using Docker
+        run: |
+          make build-with-docker
+          tar czvf dbms_exporter-${{ env.RELEASED_VERSION }}.linux-amd64.tar.gz dbms_exporter LICENSE README.md
+
+      - name: Create the dmbs_exporter package
+        run: |
+          tar czvf dbms_exporter-${{ env.RELEASED_VERSION }}.linux-amd64.tar.gz dbms_exporter LICENSE README.md
 
       - name: Upload the dmbs_exporter package to release Assets
         uses: softprops/action-gh-release@v1
