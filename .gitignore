@@ -13,3 +13,8 @@ dbms_exporter
 
 # Node (Semantic Release)
 node_modules/
+
+# Docker remnants
+hostname
+hosts
+resolv.conf

@@ -1,5 +1,5 @@
 FROM ncabatoff/dbms_exporter_builder:1.1.5
-ARG drivers="postgres freetds"
+ARG drivers="freetds"
 ARG ldflags="-extldflags=-static"
 
 WORKDIR /build
@@ -9,10 +9,8 @@ RUN make DRIVERS="$drivers" LDFLAGS="$ldflags"
 
 FROM debian:stable-slim
 RUN apt-get update
-RUN apt-get -y install libodbc1 odbcinst libsybdb5 tdsodbc
+RUN apt-get -y install libsybdb5
 COPY freetds.conf /usr/local/etc/
-COPY odbcinst.ini .
-RUN odbcinst -i -d -f ./odbcinst.ini
 
 COPY --from=0 /build/dbms_exporter /
 EXPOSE 9113

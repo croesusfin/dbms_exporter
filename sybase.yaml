@@ -63,18 +63,6 @@ syslogins:
         usage: "COUNTER"
         description: "I/O usage"
 
-spid_count_special_users:
-  query: "SELECT cmd AS sysproc, 1 AS conns
-            FROM master.dbo.sysprocesses
-           WHERE suid = 0"
-  metrics:
-    - sysproc:
-        usage: "LABEL"
-        description: "system process"
-    - conns:
-        usage: "GAUGE"
-        description: "1 if running"
-
 spid_count_by_status:
   query: "SELECT status, count(*) AS conns FROM master.dbo.sysprocesses GROUP BY status"
   metrics:
@@ -143,30 +131,3 @@ config:
         usage: "GAUGE"
         description: "config setting"
 
-dbsize:
-  queries: 
-    # USE master is to protect us against some other query leaving us in
-    # db tempdb; if you run sp_helpdb tempdb while in tempdb you get a bogus
-    # third resultset which will break the parsing of the recipe results.
-    - "USE master"
-    - "sp_helpdb tempdb"
-  resultsets:
-    - discard:
-    - metrics:
-      - db_name:
-          usage: "FIXED"
-          description: "database name"
-          value: "tempdb"
-      - device_fragments:
-          usage: "LABEL"
-          description: "short device name"
-      - size:
-          usage: "GAUGE"
-          regexp: ^([\d.]+)\s+MB$
-          description: "size in MB"
-      - usage:
-          usage: "LABEL"
-          description: "data or log"
-      - "free kbytes":
-          usage: "GAUGE"
-          description: "free space in KB"
