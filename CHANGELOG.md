@@ -1,5 +1,12 @@
 # Changelogs
 
+## [1.0.1](https://github.com/croesusfin/dbms_exporter/compare/v1.0.0...v1.0.1) (2023-05-10)
+
+
+### Bug Fixes
+
+* build + iconv ([#3](https://croesus-support.atlassian.net/browse/3)) ([eccd1bf](https://github.com/croesusfin/dbms_exporter/commit/eccd1bf38b03e58083d14adaa85ecd36452c3c28))
+
 ## 1.0.0 (2023-05-10)
 
 
