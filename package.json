@@ -1,6 +1,6 @@
 {
   "name": "dbms_exporter",
-  "version": "1.0.0-add-ci-cd-builds-e61e8e3.1",
+  "version": "1.0.0",
   "description": "dbms_exporter fork for our Sybase Vservers",
   "repository": {
     "type": "git",
