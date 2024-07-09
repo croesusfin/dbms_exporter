@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout Project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
@@ -37,7 +37,7 @@ jobs:
     if: ${{ needs.pre_ci.outputs.runCI == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -54,26 +54,19 @@ jobs:
     if: ${{ always() && needs.pre_ci.outputs.runCD == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Setup Node (for semantic release)
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install Node dependencies (for semantic release)
-        run: npm i
-
       - name: Semantic Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_SHA: ${{ github.sha }}
-        run: npx semantic-release
+        uses: croesusfin/npm-semantic-release-action@v1
+        with:
+          semantic-release-access-token: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
+          write-croesusfin-token: ${{ secrets.WRITE_CROESUSFIN_TOKEN }}
+          target-sha-to-use-for-update: ${{ github.sha }}
+          target-ref-to-use-for-update: ${{ github.ref }}
+          bump-major-version-tag: ${{ true }}
 
       - name: Build using Docker
         run: |
