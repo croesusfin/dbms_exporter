@@ -17,6 +17,7 @@ const (
 	MAPPEDMETRIC ColumnUsage = iota // Use this column with the supplied mapping of text values
 	DURATION     ColumnUsage = iota // This column should be interpreted as a text duration (and converted to milliseconds)
 	FIXED        ColumnUsage = iota // This is not a column but rather a constant label that should be added to the metrics
+	TEXT         ColumnUsage = iota // Export this column as a text label in an info metric (gauge=1)
 )
 
 // ColumnMapping defines how to build metrics from a given DB column.  Recipes
@@ -47,6 +48,8 @@ func StringToColumnUsage(s string) (u ColumnUsage, err error) {
 		u = DURATION
 	case "FIXED":
 		u = FIXED
+	case "TEXT":
+		u = TEXT
 	default:
 		err = fmt.Errorf("wrong ColumnUsage given : %s", s)
 	}

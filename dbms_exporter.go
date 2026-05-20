@@ -80,6 +80,7 @@ type MetricMap struct {
 	desc       *prometheus.Desc                  // Prometheus descriptor
 	conversion func(interface{}) (float64, bool) // Conversion function to turn DB result into float64
 	fixedval   string
+	textlabel  bool // TEXT type: emit an info metric (gauge=1) with the column value as a label
 }
 
 // Groups metric maps under a shared set of labels
@@ -153,6 +154,19 @@ func makeDescMap(metricName string, resultMap recipes.ResultMap, recipe recipes.
 				vtype:      prometheus.GaugeValue,
 				desc:       newDesc(fullName, columnMapping.Description),
 				conversion: convertDuration,
+			}
+		case common.TEXT:
+			// Info-style metric: gauge=1 with the column value exposed as a label
+			textDesc := prometheus.NewDesc(
+				fmt.Sprintf("%s_%s_info", metricName, columnName),
+				columnMapping.Description,
+				append(variableLabels, columnName),
+				constLabels,
+			)
+			thisMap[columnName] = MetricMap{
+				vtype:     prometheus.GaugeValue,
+				desc:      textDesc,
+				textlabel: true,
 			}
 		}
 	}
@@ -381,6 +395,18 @@ func (e *Exporter) scrapeResultSet(ch chan<- prometheus.Metric, namespace string
 			if metricMapping, ok := mapping.columnMappings[columnName]; ok {
 				// Is this a metricy metric?
 				if metricMapping.discard {
+					continue
+				}
+
+				// TEXT type: emit an info metric (gauge=1) with the column value as a label
+				if metricMapping.textlabel {
+					textVal, ok := db.ToString(row[idx])
+					if !ok {
+						e.errors_total.Inc()
+						log.Errorln("Unexpected error parsing TEXT column: ", namespace, columnName, row[idx])
+						continue
+					}
+					ch <- prometheus.MustNewConstMetric(metricMapping.desc, metricMapping.vtype, 1, append(labels, textVal)...)
 					continue
 				}
 
