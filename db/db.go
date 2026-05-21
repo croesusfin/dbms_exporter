@@ -201,7 +201,11 @@ func ToUnsignedFloat64(t interface{}, r *regexp.Regexp) (float64, bool) {
 // Convert database.sql to string for Prometheus labels. Null types are mapped to empty strings.
 func ToString(t interface{}) (string, bool) {
 	switch v := t.(type) {
+	case int32:
+		return fmt.Sprintf("%v", v), true
 	case int64:
+		return fmt.Sprintf("%v", v), true
+	case float32:
 		return fmt.Sprintf("%v", v), true
 	case float64:
 		return fmt.Sprintf("%v", v), true
