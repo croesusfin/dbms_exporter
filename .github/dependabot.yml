@@ -1,0 +1,65 @@
+version: 2
+registries:
+  git-github:
+    type: git
+    url: https://github.com
+    username: x-access-token
+    password: ${{ secrets.READ_CROESUSFIN_REPOS_TOKEN }}
+updates:
+  - package-ecosystem: "uv"
+    directories:
+      - "**/*"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "fix(DATA-28946)"
+      prefix-development: "ci(DATA-28946)"
+    groups:
+      version-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      version-major:
+        applies-to: version-updates
+        update-types:
+          - "major"
+      security-minor-patch:
+        applies-to: security-updates
+        update-types:
+          - "minor"
+          - "patch"
+      security-major:
+        applies-to: security-updates
+        update-types:
+          - "major"
+  - package-ecosystem: "github-actions"
+    directories:
+      - "**/*"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "fix(DATA-28946)"
+    groups:
+      version-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      version-major:
+        applies-to: version-updates
+        update-types:
+          - "major"
+      security-minor-patch:
+        applies-to: security-updates
+        update-types:
+          - "minor"
+          - "patch"
+      security-major:
+        applies-to: security-updates
+        update-types:
+          - "major"
+    registries:
+      - git-github
