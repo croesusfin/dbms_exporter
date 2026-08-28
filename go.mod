@@ -1,6 +1,6 @@
 module github.com/ncabatoff/dbms_exporter
 
-go 1.18.0
+go 1.18
 
 require (
 	github.com/alexbrainman/odbc v0.0.0-20190102080306-cf37ce290779
