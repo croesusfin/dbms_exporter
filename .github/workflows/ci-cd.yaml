@@ -90,3 +90,33 @@ jobs:
         with:
           tag_name: v${{ env.RELEASED_VERSION }}
           files: dbms_exporter-${{ env.RELEASED_VERSION }}.linux-amd64.tar.gz
+
+  test-build:
+    name: Test Build (manuel, sans semantic-release)
+    runs-on: ubuntu-22.04
+    needs: [ pre_ci ]
+    # Uniquement pour un déclenchement manuel sur une branche autre que main :
+    # contourne semantic-release (bloqué par l'absence de SEMANTIC_RELEASE_ACCESS_TOKEN,
+    # voir SUP-24357) pour produire un binaire de test sans créer de release/tag GitHub.
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Build using Docker
+        run: |
+          make build-with-docker
+
+      - name: Create the dbms_exporter test package
+        run: |
+          tar czvf dbms_exporter-test-${{ github.run_number }}.linux-amd64.tar.gz dbms_exporter LICENSE README.md
+
+      - name: Upload test build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbms_exporter-test-${{ github.run_number }}-${{ github.sha }}
+          path: dbms_exporter-test-${{ github.run_number }}.linux-amd64.tar.gz
+          retention-days: 14
