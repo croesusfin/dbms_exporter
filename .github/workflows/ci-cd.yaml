@@ -46,53 +46,45 @@ jobs:
         run: |
           make build-with-docker
 
-  release_version:
-    name: Release Version (npm-semantic-release-action)
-    needs: [ pre_ci, ci ]
-    # In order to run even when the CI is skipped we must also add the `always()`
-    if: ${{ always() && needs.pre_ci.outputs.runCD == 'true' }}
-    permissions:
-      id-token: write
-      contents: read
-      actions: write
-      packages: write
-    # NON VERIFIE : suppose que dbms_exporter (repo public) est autorise a assumer
-    # npm-semantic-release-entrypoint-role via OIDC. A confirmer avec l'equipe
-    # plateforme/AWS (voir SUP-24357) avant de se fier a ce job en pratique.
-    uses: croesusfin/npm-semantic-release-action/.github/workflows/npm-semantic-release.yaml@main
-    with:
-      # main/master sont geres nativement par le workflow reutilisable ; sur les
-      # autres branches (dev/*, feature/*, deja definies comme canaux prerelease
-      # dans release.config.js) il faut explicitement passer preRelease: true
-      # pour que le job interne de claims OIDC se declenche.
-      preRelease: ${{ github.ref_name != 'main' && github.ref_name != 'master' }}
-      dry-run: false
-
   cd:
     name: CD
     runs-on: ubuntu-22.04
-    needs: [ pre_ci, ci, release_version ]
+    needs: [ pre_ci, ci ]
     # In order to run the CD even when the CI is skipped we must also add the `always()`
-    if: ${{ always() && needs.pre_ci.outputs.runCD == 'true' && needs.release_version.outputs.new_version != '' }}
-    env:
-      RELEASED_VERSION: ${{ needs.release_version.outputs.new_version }}
+    if: ${{ always() && needs.pre_ci.outputs.runCD == 'true' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
-          ref: ${{ github.ref }}
+
+      - name: Setup Node (for semantic release)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Node dependencies (for semantic release)
+        run: npm i
+
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_ACCESS_TOKEN }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: npx semantic-release
 
       - name: Build using Docker
         run: |
-          make build-with-docker TAG_VERSION=v${{ env.RELEASED_VERSION }}
+          make build-with-docker
+          tar czvf dbms_exporter-${{ env.RELEASED_VERSION }}.linux-amd64.tar.gz dbms_exporter LICENSE README.md
 
-      - name: Create the dbms_exporter package
+      - name: Create the dmbs_exporter package
         run: |
           tar czvf dbms_exporter-${{ env.RELEASED_VERSION }}.linux-amd64.tar.gz dbms_exporter LICENSE README.md
 
-      - name: Upload the dbms_exporter package to release Assets
+      - name: Upload the dmbs_exporter package to release Assets
         uses: softprops/action-gh-release@v1
         if: ${{ env.RELEASED_VERSION != '' }}
         with:
