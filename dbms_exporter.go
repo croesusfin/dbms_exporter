@@ -16,6 +16,7 @@ import (
 	"github.com/ncabatoff/dbms_exporter/db"
 	"github.com/ncabatoff/dbms_exporter/recipes"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 )
 
@@ -457,7 +458,7 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, usage)
+		fmt.Fprint(os.Stderr, usage)
 	}
 	flag.Parse()
 	if *version {
@@ -502,7 +503,7 @@ func main() {
 	exporter.Start()
 	prometheus.MustRegister(exporter)
 
-	http.Handle(*metricPath, prometheus.Handler())
+	http.Handle(*metricPath, promhttp.Handler())
 	landingPage := []byte(fmt.Sprintf(landingPageFmt, *driver, *driver))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(landingPage)
