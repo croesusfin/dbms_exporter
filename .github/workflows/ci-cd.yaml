@@ -67,7 +67,7 @@ jobs:
       - name: Setup Node (for semantic release)
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Install Node dependencies (for semantic release)
         run: npm i
