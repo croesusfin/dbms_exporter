@@ -2,6 +2,9 @@ name: Commit Linter
 on:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   commit-linter:
     runs-on: ubuntu-22.04
